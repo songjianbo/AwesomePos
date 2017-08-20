@@ -3,22 +3,26 @@
     <div>
       <el-row>
         <el-col :span='7' class='pos-order' id='order-list'>
-          <el-tabs>
+          <el-tabs v-model="activeName">
             <el-tab-pane label="点餐" name="first">
               <el-table :data="tableData" border style="width: 100%">
                 <el-table-column prop="goodsName" label="商品名称">
                 </el-table-column>
                 <el-table-column prop="count" label="数量" width="70">
                 </el-table-column>
-                <el-table-column prop="price" label="金额" width="70">
+                <el-table-column prop="totalPrice" label="金额" width="70">
                 </el-table-column>
                 <el-table-column label="操作" width="100" fixed="right">
                   <template scope="scope">
-                    <el-button type="text" size="small">删除</el-button>
-                    <el-button type="text" size="small">增加</el-button>
+                    <el-button type="text" size="small" @click="delGoods(scope.row)">删除</el-button>
+                    <el-button type="text" size="small" @click="addGoods(scope.row)">增加</el-button>
                   </template>
                 </el-table-column>
               </el-table>
+              <div class="totalDiv">
+                <small>数量: </small>{{calTotalCount}} &nbsp;&nbsp;&nbsp;&nbsp;
+                <small>金额: </small>{{calTotalMoney | formatMoney('元')}}
+              </div>
               <div class="div-btn">
                 <el-button type="warning">挂单</el-button>
                 <el-button type="danger">删除</el-button>
@@ -39,7 +43,7 @@
             <div class="title">常用商品</div>
             <div class="often-goods-list">
               <ul>
-                <li v-for="goods in oftenGoods" :key="goods.goodsId">
+                <li v-for="goods in oftenGoods" :key="goods.goodsId" @click="addGoods(goods)">
                   <span>{{goods.goodsName}}</span>
                   <span class="o-price">{{goods.price}}</span>
                 </li>
@@ -51,7 +55,7 @@
                 <el-tab-pane label="汉堡">
                   <div>
                     <ul class='cookList'>
-                      <li v-for="goods in type0Goods" :key="goods.goodsId">
+                      <li v-for="goods in type0Goods" :key="goods.goodsId" @click="addGoods(goods)">
                         <span class="foodImg">
                           <img :src="goods.goodsImg" width="100%">
                         </span>
@@ -64,7 +68,7 @@
                 <el-tab-pane label="小食">
                   <div>
                     <ul class='cookList'>
-                      <li v-for="goods in type1Goods" :key="goods.goodsId">
+                      <li v-for="goods in type1Goods" :key="goods.goodsId" @click="addGoods(goods)">
                         <span class="foodImg">
                           <img :src="goods.goodsImg" width="100%">
                         </span>
@@ -77,7 +81,7 @@
                 <el-tab-pane label="饮料">
                   <div>
                     <ul class='cookList'>
-                      <li v-for="goods in type2Goods" :key="goods.goodsId">
+                      <li v-for="goods in type2Goods" :key="goods.goodsId" @click="addGoods(goods)">
                         <span class="foodImg">
                           <img :src="goods.goodsImg" width="100%">
                         </span>
@@ -90,7 +94,7 @@
                 <el-tab-pane label="套餐">
                   <div>
                     <ul class='cookList'>
-                      <li v-for="goods in type3Goods" :key="goods.goodsId">
+                      <li v-for="goods in type3Goods" :key="goods.goodsId" @click="addGoods(goods)">
                         <span class="foodImg">
                           <img :src="goods.goodsImg" width="100%">
                         </span>
@@ -117,21 +121,70 @@ export default {
   name: 'Pos',
   data() {
     return {
+      activeName: 'first',
+      totalCount: 0,
+      totalMoney: 0,
       tableData: [],
-      oftenGoods:[],
+      oftenGoods: [],
       type0Goods: [],
       type1Goods: [],
       type2Goods: [],
       type3Goods: [],
     }
   },
-  created() {
-    axios.get('http://jspang.com/DemoApi/oftenGoods.php').then(response=>{
-         this.oftenGoods=response.data;
-      }).catch(error=>{
-          console.log(error);
-          alert('网络错误，不能访问');
+  filters: {
+    formatMoney: function (value,type) {
+      return "￥" + value + type
+    }
+  },
+  methods: {
+    addGoods: function (goods) {
+      let flag = true;
+      this.tableData.forEach(item => {
+        if (item.goodsId == goods.goodsId) {
+          item.totalPrice = item.price * ++item.count;
+          flag = false;
+          return false;
+        }
       });
+      if (flag) {
+        this.tableData.push({
+          goodsId: goods.goodsId,
+          goodsName: goods.goodsName,
+          count: 1,
+          price: goods.price,
+          totalPrice: goods.price
+        })
+      }
+    },
+    delGoods: function (goods) {
+      let index = this.tableData.indexOf(goods);
+      this.tableData.splice(index, 1);
+    },
+  },
+  computed: {
+    calTotalCount: function () {
+      this.totalCount = 0;
+      this.tableData.forEach(item => {
+        this.totalCount += item.count;
+      });
+      return this.totalCount;
+    },
+    calTotalMoney: function () {
+      this.totalMoney = 0;
+      this.tableData.forEach(item => {
+        this.totalMoney += item.totalPrice;
+      });
+      return this.totalMoney;
+    },
+  },
+  created() {
+    axios.get('http://jspang.com/DemoApi/oftenGoods.php').then(response => {
+      this.oftenGoods = response.data;
+    }).catch(error => {
+      console.log(error);
+      alert('网络错误，不能访问');
+    });
     axios.get('http://jspang.com/DemoApi/typeGoods.php').then(response => {
       this.type0Goods = response.data[0];
       this.type1Goods = response.data[1];
@@ -175,6 +228,7 @@ export default {
   padding: 10px;
   margin: 5px;
   background-color: #fff;
+  cursor: pointer;
 }
 
 .o-price {
@@ -195,6 +249,7 @@ export default {
   padding: 2px;
   float: left;
   margin: 2px;
+  cursor: pointer;
 }
 
 .cookList li span {
@@ -217,5 +272,11 @@ export default {
   font-size: 16px;
   padding-left: 10px;
   padding-top: 10px;
+}
+
+.totalDiv {
+  background-color: #fff;
+  padding: 10px;
+  border-bottom: 1px solid #D3DCE6;
 }
 </style>
