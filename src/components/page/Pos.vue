@@ -5,7 +5,7 @@
         <el-col :span='7' class='pos-order' id='order-list'>
           <el-tabs v-model="activeName">
             <el-tab-pane label="点餐" name="first">
-              <el-table :data="tableData" border style="width: 100%">
+              <el-table :data="tableData" border show-summary style="width: 100%">
                 <el-table-column prop="goodsName" label="商品名称">
                 </el-table-column>
                 <el-table-column prop="count" label="数量" width="70">
@@ -20,13 +20,13 @@
                 </el-table-column>
               </el-table>
               <div class="totalDiv">
-                <small>数量: </small>{{calTotalCount}} &nbsp;&nbsp;&nbsp;&nbsp;
-                <small>金额: </small>{{calTotalMoney | formatMoney('元')}}
+                <small>数量: </small>{{calTotalCount}} &nbsp;
+                <small>金额: </small>{{calTotalMoney | formatMoney('元')}}(注:仅测试'computed')
               </div>
               <div class="div-btn">
                 <el-button type="warning">挂单</el-button>
-                <el-button type="danger">删除</el-button>
-                <el-button type="success">结账</el-button>
+                <el-button type="danger" @click="delAllGoods">删除</el-button>
+                <el-button type="success" @click="checkout">结账</el-button>
               </div>
             </el-tab-pane>
             <el-tab-pane label="挂单" name="second">
@@ -133,7 +133,7 @@ export default {
     }
   },
   filters: {
-    formatMoney: function (value,type) {
+    formatMoney: function (value, type) {
       return "￥" + value + type
     }
   },
@@ -161,6 +161,25 @@ export default {
       let index = this.tableData.indexOf(goods);
       this.tableData.splice(index, 1);
     },
+    delAllGoods() {
+      this.tableData = [];
+      this.totalCount = 0;
+      this.totalMoney = 0;
+    },
+    checkout() {
+      if (this.totalCount != 0) {
+        this.tableData = [];
+        this.totalCount = 0;
+        this.totalMoney = 0;
+        this.$message.success({
+          message: '结账成功，感谢你又为店里出了一份力!',
+          duration: 1000
+        });
+      } else {
+        this.$message.error({ message: '不能空结。老板了解你急切的心情！', duration: 1000 });
+      }
+
+    }
   },
   computed: {
     calTotalCount: function () {
